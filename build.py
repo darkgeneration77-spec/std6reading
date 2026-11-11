@@ -3,7 +3,7 @@ from pypinyin import pinyin,Style,load_phrases_dict
 import edge_tts
 root=pathlib.Path(__file__).parent
 items=json.loads((root/'sentences.json').read_text(encoding='utf-8'))
-load_phrases_dict({'角马':[['jiǎo'],['mǎ']], '迁徙':[['qiān'],['xǐ']], '繁衍':[['fán'],['yǎn']], '横亘':[['héng'],['gèn']], '干涸':[['gān'],['hé']]})
+load_phrases_dict({'角马':[['jiǎo'],['mǎ']], '迁徙':[['qiān'],['xǐ']], '繁衍':[['fán'],['yǎn']], '横亘':[['héng'],['gèn']], '干涸':[['gān'],['hé']], '危险重重':[['wēi'],['xiǎn'],['chóng'],['chóng']]})
 (root/'audio').mkdir(exist_ok=True)
 (root/'audio'/'chars').mkdir(exist_ok=True)
 sem=asyncio.Semaphore(4)
@@ -36,13 +36,15 @@ async def main():
   x['audio']=f'audio/{i+1:03d}.mp3'
  for ch,num in chars.items():tasks.append(make(ch,root/'audio'/'chars'/f'{num:04d}.mp3'))
  async def sentence(i,x):
-  boundaries=await make(x['text'],root/'audio'/f'{i+1:03d}.mp3',True)
+  spoken=x['text'].replace('危险重重','危险虫虫')
+  boundaries=await make(spoken,root/'audio'/f'{i+1:03d}.mp3',True)
   timeline=[];cursor=0
   for b in boundaries:
-   start=x['text'].find(b['text'],cursor)
-   if start<0:start=x['text'].find(b['text'])
+   spoken_chunk=b['text'].replace('虫','重') if '危险重重' in x['text'] else b['text']
+   start=x['text'].find(spoken_chunk,cursor)
+   if start<0:start=x['text'].find(spoken_chunk)
    if start<0:continue
-   cursor=start+len(b['text'])
+   cursor=start+len(spoken_chunk)
    indices=[j for j in range(start,cursor) if x['characters'][j]['audio']]
    for k,j in enumerate(indices):timeline.append({'index':j,'time':round(b['start']+b['duration']*k/max(1,len(indices)),3)})
   x['timing']=sorted(timeline,key=lambda v:v['time'])
